@@ -1,0 +1,127 @@
+---
+title: "Session 1 in-class activity"
+author: "Chenxin Li"
+date: "2026-06-15"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# This is a header 
+## This is a sub-header 
+
+If you change the output to html_notebook, 
+it will automatically render an HTML file on save.   
+You should be able to find the HTML file in the same folder as your .Rmd script. 
+
+You can write any plain text you want here.   
+You can _italicize_ or __bold__ text if you want.  
+You can ~~cross out~~ text as well.  
+You can start a new line using two spaces at the end of a line.  
+
+You can start a list like this: 
+
+* First item of list. 
+* Second item of list. 
+* Remember to leave an empty line before the first bullet point. 
+
+Or like this: 
+
+1. First item.
+2. Second item. 
+3. If you want numbered list. 
+
+This RMarkdown is for you to familiarize with RStudio, 
+and learn how to load packages into your session.   
+At the start of your RMarkdown, you want to have a brief 
+introduction section to describe what this script or notebook is doing. 
+
+# Packages 
+After the introduction section, you will start a new section to load your packages. 
+To do that, you will need to insert a code chunk. 
+The short cut is `ctrl-alt-i` on PC or `cmd-opt-i` on Mac. 
+Now you have a code chunk.  
+```{r}
+# This is where R will run your code. 
+# If you need to write comments here, you will need to start the line with a # sign. 
+```
+
+To load a package, use `library()` function and specify the package name 
+inside the parenthesis.   
+To run a code chunk, click the green triangle at the upper right of the code chunk.  
+Or you can do `ctrl-enter` on a PC or `cmd-enter` on a Mac to run line-by-line. 
+
+```{r}
+library(tidyverse) 
+```
+
+You might get some warning messages regarding the version of R.  
+As long as there are no error messages, you are all good. 
+ 
+The tidyverse is a collection of packages for data science and visualization.  
+These packages use a similar style of syntax and design principal.  
+While it is not the fastest or keystroke efficient, we will adopt these packages 
+due to how intuitive they are. 
+
+# How to get help 
+Let's say you want to know how to use the `head()` function. 
+You type ?head in the console.  
+RStudio will pull up the help page in the lower right corner.  
+It should say "returns the first or last parts of objects" or something similar. 
+
+Let's try that. The tidyverse comes with a few built-in datasets.   
+One of them is called `storms`.   
+Let's try using `head()` on `storms`.  
+
+```{r}
+head(storms)
+```
+ 
+By default,  `head()` prints the first 6 rows.   
+You can print the first 10 rows by adding `head(n = 10)`, for example. 
+
+```{r}
+head(storms, n = 10)
+```
+
+# Checking dataset dimensions. 
+You can check how big the dataset is by checking how many rows and columns there are. 
+You will use the `dim()` function. 
+Type ?dim in the console to learn how to use it. 
+
+```{r}
+dim(storms)
+```
+
+`dim()` returns 2 numbers.  
+The first number is rows, and the second number is columns.  
+This dataset has 19,537 rows and 13 columns. A big dataset! 
+
+# In-class activity 
+Start a new Rmd file. 
+Change output from html_document to html_notebook.
+
+# Q1 
+Briefly introduce yourself. 
+	* Which degree program are you in? 
+	* What year are you in? 
+	* If known, which lab are you part of? Very briefly describe what are you working on. 
+	* What do you want to learn in 301? 
+
+Feel free to use formatting options such as italic, bold, lists, and headers.  
+
+# Q2
+Load the tidyverse package. 
+
+# Q3 
+View the first 10 rows of the `starwars` dataset.
+
+# Q4
+How many rows and columns does `starwars` have? 
+
+# Q5
+Click Preview and Knit to HTML. Check if the HTML has been rendered properly. Upload to D2L. 
+ 
+

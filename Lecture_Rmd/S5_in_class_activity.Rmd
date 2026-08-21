@@ -1,0 +1,292 @@
+---
+title: "Session 5 in-class activity"
+author: "Chenxin Li"
+date: "2026-06-16"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+This lesson we will go over:
+
+1. File input/output (I/O) in R. 
+2. How to make an R script. 
+3. How to write custom functions.
+4. Other control structures.
+5. Applying a function across a list or vector. 
+
+# Packages
+We will need the tidyverse as well as a new package called `readxl`. 
+`readxl` is a package that allows you to directly read an Excel spreadsheet to R. 
+Use the Package panel at the lower right corner of RStudio to install `readxl`. 
+
+```{r}
+library(tidyverse)
+library(readxl)
+```
+
+
+# File I/O. 
+R works in the memory, not the disk (hard drive).  
+The hard drive or disk is the permanent storage of your data. 
+Your data is stored even if your device is powered off.  
+In contrast, the memory is only short-term storage.  
+The data is stored temporally for applications to use and modify.  
+However, the data will not be saved when the app is closed,  
+or when the device is powered off. 
+
+This means we need to read data into R (file input), 
+and after we are done,  
+we need to write the results onto the disk (file output). 
+
+## Specifying the path and file 
+Let's say we want to read an Excel file, we need to use `read_excel()`. 
+Inside `read_excel()`, we have to specify where the file is. 
+In this example, the file is at "/Users/cxli9/Desktop/Li/MSU/Teaching/Bioinformatics/301-F2026/Data". 
+The location will be different for your computer. 
+Note that R uses the forward slash "/" for denoting folders and sub-folders.  
+
+"/Users/cxli9/Desktop/Li/MSU/Teaching/Bioinformatics/301-F2026/Data" is the absolute path. 
+You can also navigate your computer in R using the relative path. 
+
+By default, R is reading into the folder where your current R/Rmd script is at. 
+If you type "..", it will go one folder up. 
+If you press `Tab`, it should show what other folders or files are in the current directory. 
+
+```{r}
+S5_example1 <- read_excel("../Data/S5_example1.xlsx")
+head(S5_example1)
+```
+
+This is a tracking sheet Li used to track his job searches in 2024. 
+Each row is a position that he applied to.  
+Each column is a different attribute of the positions. 
+
+## Reading tables of different formats. 
+In addition to Excel, some of the most common file formats are: 
+
+* .csv (comma separated values) 
+* .txt (plain text, values separated by tab) 
+
+In addition, you want to check if the data file comes with headers (also known as column names). 
+
+### Read csv
+we will use `readr` functions (part of tidyverse) to read csv or plain text files. 
+Let's read a data table called "S5_example2.csv" in the Data folder. 
+```{r}
+S5_example2 <- read_csv("../Data/S5_example2.csv",
+                                  col_names = T)
+head(S5_example2)
+```
+
+In this case the data file comes with its own column names.  
+By default, `readr` functions has `col_names` option set to TRUE. 
+You can print the first 6 lines of the table using `head()` to check if the table was parsed correctly. 
+
+### Read plain text. 
+To read plain text, you will use `read_delim()`.  
+In this case you will also need to specify if values are separated by tab or white space `" "`. 
+If you are not sure, try both and see if the table was parsed correctly. 
+Let's read a data table called "S5_example3.gtf" in the Data folder.
+```{r}
+S5_example3 <- read_delim("../Data/S5_example3.gtf", col_names = F, delim = "\t")
+head(S5_example3)
+```
+
+In this example, the data file has no column names, so we set `col_names` to FALSE.  
+Also, this data file uses tab `"\t"` to separate values.  
+
+## File output. 
+Writing files to the disk is the reverse operation of reading files. 
+In this case, you need to specify which object in the environment to write, and the path.  
+Make sure the target directory actually exists.  
+You will use functions such as `write_delim()`(for plain text) and `write_excel_csv()` for csv.  
+You can also reformat the data files if you want. 
+For example, now I want to store `S5_example1` as a plain text file rather than Excel. 
+Let's save it to the Results folder. 
+
+```{r}
+write_delim(S5_example1, "../Results/S5_example1.txt", 
+            delim = "\t", col_names = T)
+```
+
+You need to specify values to be separated by tab (`"\t"`) and that the file has column names. 
+
+## Directly reading/writing R data objects. 
+You can also directly read an R object from the disk or write an R object to the disk.  
+This could be helpful if you just want to permanently store an intermediate result from R.  
+
+Let's say you have a result that you want to store. 
+```{r}
+important_result <- list(result1 = c("A", "B", "C", "X", "Y", "Z"),
+                         result2 = c(1, 2, 3))
+important_result
+```
+
+You can store it on disk with `saveRDS()`. Let's save it to the Results folder.
+```{r}
+saveRDS(important_result, "../Results/S5_important_result.Rds")
+```
+Don't forget to specify the path and the file name. 
+
+You can retrieve it using `readRDS()`.
+```{r}
+important_result <- readRDS("../Results/S5_important_result.Rds")
+important_result
+```
+
+# R script. 
+An R script is plain text that R can read and execute. 
+Every line of text is interpreted as code. Non-code text must start with # at the start of line. 
+
+Good practice: write down title, usage, date created, author, last modified, input, output, packages required. 
+Check "S5_Example_script.R" in the Scripts folder for an example. 
+
+# Functions 
+You can write custom functions in R. 
+For example, the function logit is not implemented in R. 
+logit is defined as for a number p between 0 and 1, 
+logit = log(p/(1-p)).  
+
+The syntax for function is `function(parameters){what to do}`. 
+You will need to use the curly brackets `{}`. 
+
+```{r}
+logit <- function(p){
+  log(p / (1-p) )
+}
+```
+
+Once defined, the custom functions can be called like any built-in functions. 
+```{r}
+logit(0.5)
+```
+# Other control structures 
+R can perform 
+
+* If statement
+* for loops
+* while loops 
+
+like other programming languages. There are better ways to do these in R.   
+Here are some examples. 
+
+## if statement 
+The syntax for if statement is 
+`if (condition) {do something} else {do something else}` 
+
+```{r}
+x <- 1
+y <- 2
+
+if (x > y) {
+    paste(x, ">", y)
+  } else{
+    paste(x, "<=", y)
+  }
+
+```
+## for loops
+You use for loops to apply a function across a list or vector. 
+
+The syntax for for loops is 
+`for(list or vector){do something}` 
+
+```{r}
+some_vector <- c("A", "B" , "C", "D", "E")
+
+for(index in 1:length(some_vector)){
+		cat(index, some_vector[index], "\n")
+} 
+```
+
+You can nest for loops in another for loop.  
+I _do not_ recommend. 
+
+
+## While loops
+Syntax for while loops is  
+`while(condition){do something}`
+
+```{r}
+index <- 5 
+	while(index <= 10){
+	cat(index, "\n")
+	index <- index + 1
+}
+
+```
+Be super careful when you do while loops! You can get stuck in an infinite loop. 
+
+# Applying a function over a list. 
+R has a set of `apply()` functions, which is a better way to do for loops.  
+If you want to apply a function across a list, you use `lapply()`.  
+If you want to apply a function across a vector, you use `vapply()` and so on.  
+
+The syntax is `l/vapply(list/vector, function, additional parameters)`.  
+
+Let's say I have a bunch of files from an analysis. I need to read them all in R. 
+The results files are in "../Data/batch_import_example1" folder. 
+First you will create a list for each files in the folder. 
+They are all coverage files in .cov format. 
+
+```{r}
+file_list1 <- list.files("../Data/S5-batch_import_example1/", pattern = ".cov",
+                         full.names = T)
+file_list1
+length(file_list1)
+```
+`full.names = T` option preserved the path, which is important for `read_delim()`. 
+Looks like we have 21 files. 
+Then we apply `read_delim` for all of them. 
+
+```{r message=F}
+result1 <- lapply(file_list1, FUN = read_delim, 
+      delim = "\t", col_names = F)
+```
+We are applying `read_delim()` to every file name in the `file_list1`.   
+Note that when you are looping a function, you do not add parentheses `()` after the function name  
+because we are simply referring to the function name here.  
+Also note that `read_delim()` also requires `col_name` and `delim` parameters. 
+There additional parameters are specified in `lapply()` instead. 
+R understands that these parameters are applied to everything in the list.  
+
+```{r}
+table1 <- result1[[1]]
+
+head(table1)
+```
+
+Now you can see that result1 is a list of 21 tables. 
+You can call out each table using index, such as `[[1]]`.   
+We will go over how to convert a list of data frames into a single data frame in later lectures.   
+
+# In class activity 
+## Q1
+Load S5_activity1.xlsx in the Data folder into R.  
+Hint: this is an Excel spreadsheet. 
+
+## Q2
+Load S5_activity2.csv in the Data folder into R. 
+Then write it as a plain text file in the Results folder. 
+
+## Q3
+Batch import data files from the `Data/S5-batch_import_example2`. 
+Then save the list of data tables as an Rds object in the Results folder.  
+
+## Q4 
+The logistic function has the formula: y = 1/(1+exp(-x)). 
+Write an R function for the logistic function. 
+What is the value of the logistic function at x = 0? 
+What is the value of the logistic function at x = 1000?
+What is the value of the logistic function at x = -1000? 
+
+ 
+
+ 
+
+
+

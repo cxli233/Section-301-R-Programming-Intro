@@ -1,0 +1,189 @@
+---
+title: "Session 10 in class actitivy"
+author: "Chenxin Li"
+date: "2026-06-18"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction 
+In this lesson, you will learn how to use the `patchwork` package to make composite figures. 
+You will need to install `patchwork` using the package panel. 
+
+We will go over: 
+
+* Simple layout 
+* Complex layout with `design` syntax 
+* Control relative widths and heights 
+
+# Packages
+```{r}
+library(tidyverse)
+library(patchwork)
+library(RColorBrewer)
+```
+
+# Simple layout
+For the purpose of this lesson, let's load some pre-made figures to assemble.   
+The data are taken from [Tenorio Berrío et al., 2025](nph.onlinelibrary.wiley.com/doi/10.1111/nph.20446)
+
+Go to [Zenodo record 22047472](https://zenodo.org/records/22047472) 
+to download "S10_exampleA.Rds" and "S10_exampleB.Rds" and copy them to the Data folder. 
+```{r}
+panelA <- readRDS("../Data/S10_exampleA.Rds")
+panelB <- readRDS("../Data/S10_exampleB.Rds")
+panelCA <- readRDS("../Data/S10_exampleCA.Rds")
+panelCB <- readRDS("../Data/S10_exampleCB.Rds")
+panelCC <- readRDS("../Data/S10_exampleCC.Rds")
+```
+
+Free feel to view each panel by calling their name.   
+```{r}
+panelA
+panelB
+panelCA
+panelCB
+panelCC
+```
+Let's say I want to have `panelA` on top of `panelB`, what do you do? 
+To make an assembly, we need to use `wrap_plot()`, which is part of `patchwork()`.  
+We need to specify the panels and how many rows and columns to assemble them into. 
+In this case we just want `panelA` on top of `panelB`, so it will be 1 column and 2 rows. 
+```{r}
+wrap_plots(panelA, panelB,
+           nrow = 2, ncol = 1)
+```
+If we want to add the letter "A" to the top left of `panelA`, 
+and letter "B" to the top left of `panelB`, we will use the `tag` option in `labs()`. 
+Then we save the new assembly as an R object `AB`. 
+```{r}
+AB <- wrap_plots(panelA + labs(tag = "A"),
+           panelB + labs(tag = "B"),
+           nrow = 2, ncol = 1)
+
+AB
+```
+This is a representation of single cell RNA-seq data. 
+Each dot is a cell. Cells are grouped and clustered by their transcriptome. 
+Cell type identities are color coded. 
+Panel B is a subset of cells from the experiment. 
+Sub-populations of vasculature cell types were identified.  
+
+# Controlling complex layout and relative sizes 
+For complex layouts, we need the `design` syntax. 
+`patchwork` has an intuitive way to arrange plots using the `design = ` argument. 
+`design` is a character string with rows and columns. 
+
+The `design` argument is a character string of uppercase letters (A, B, C, and so on).
+Within this vector, we use new lines to indicate different rows in the composite.
+
+If the `design` has two rows, the composite will have two rows. For example, 
+```
+"AB
+ CD"
+```
+
+It specified that "part A" will be at the top left, "part B" will be at the top right, 
+"part C" will be at the lower left, and "part D" will be at the lower right.  
+
+If you need a panel to use the full row space or full column space, 
+repeat the letter across the rows and columns. 
+
+```
+"AB
+ CC"
+```
+For example, this design will have panel C using up the entire 2nd row of the assembly. 
+
+```
+"AB
+ AC"
+```
+For example, this design will have panel A using up the entire 1st column of the assembly. 
+
+Now let's do a real example. 
+Let's say I want panel C to look like this, which itself is an assembly of CA, CB, and CC.  
+
+| Column 1    | Column 2  |
+| :---------: | :-------: |
+| CA          | CB        |
+| Blank       | CC        |
+
+
+In this case, the design looks like this: 
+
+```
+"AB
+ #C"
+```
+
+Let's say we also want the first column to be only 5% of the width of the second column, 
+and the second row to be 2% of the height of the first row.  
+You can specify relative heights and widths using `heights` and `widths` options in `wrap_plot()`. 
+
+```{r}
+wrap_plots(panelCA, panelCB, panelCC, 
+           design = "AB
+                     #C" , 
+           widths = c(0.02, 1),
+           heights = c(1, 0.02), guides = "collect")
+```
+Using `widths = c(0.05, 1)`, I specified the first column is 5% width of the second column.  
+Using `heights = c(1, 0.02)`, I specified the second row is 2% height of the first row.  
+Lastly, I used `guides = "collect"` to collect the legends to the right. 
+
+Let's add the letter "C" to the upper left of this assembly and save the assembly as an object. 
+We will only need to add the letter to panelCA. 
+
+```{r}
+C <- wrap_plots(panelCA + labs(tag = "C"),
+                panelCB, panelCC, 
+           design = "AB
+                     #C" , 
+           widths = c(0.02, 1),
+           heights = c(1, 0.02), guides = "collect")
+
+C
+```
+1. This is a heat map showing the expression of aliphatic glucosinolate biosynthetic genes 
+across different vasculature cell populations. 
+Each row is a gene, and each column is a cell population. 
+The darker the color, the higher the expression. 
+The larger the dots, the more cells are expressing the mRNA in each cell population. 
+You can see the pathway is most highly expressed in subcluster 5. 
+
+2. The pathway is divided into 3 stages: chain elongation, core formation, and side chain. 
+The color bar on the right annotates which stage the biosynthetic gene belongs to.
+
+3. Finally, the color bar at the bottom annotates which cell type each cell population (subcluster) belongs to.  
+
+## Hierarchical assembly
+Now we can assemble the assemblies and export it to our disk. 
+```{r}
+wrap_plots(AB, C, nrow = 1, ncol = 2, widths = c(0.8, 1))
+
+ggsave("../Results/S10_example.png", width = 7.5, height = 6)
+```
+It looks nice! And it's publication ready. 
+
+## Applying theme setting across panels 
+One final note is that you can apply `theme()` settings across the assembly using the `&` syntax. 
+Let's say we want the entire figure to have bigger text, like font size 12. 
+The function is `theme(text = element_text(size = 12))` . 
+We simply add that to the `wrap_plots()` line using `&`. 
+```{r}
+wrap_plots(AB, C, nrow = 1, ncol = 2, widths = c(0.8, 1)) &
+  theme(text = element_text(size = 14))
+```
+# In-class activity 
+## Q1
+Use your own data from your research to generate a composite figure. 
+Save it using `ggsave()`. Produce both a .svg copy and a .png copy.  
+
+For those of you who do not have your own data, feel free to use publicly available datasets.   
+Also feel free to explore the income (S6_activity1.csv), continent (S7_example1.csv), mortality (S7_activity1.csv), and birth rate (S7_activity2.csv) datasets to assemble a figure that conveys a coherent message.  
+
+

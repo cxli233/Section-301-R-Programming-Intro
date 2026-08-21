@@ -1,0 +1,385 @@
+---
+title: "Session 4 in-class activity"
+author: "Chenxin Li"
+date: "2026-06-16"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+In this lesson, we will go over:
+
+1. Data structures
+2. Boolean operations 
+3. Strings  
+
+# Packages 
+We will need the tidyverse for strings.  
+Let's just load it now and not worry about it later.   
+```{r}
+library(tidyverse)
+```
+
+# Data structures 
+The 3 data structures we will go over today are:
+
+1. Factors
+2. List 
+3. Data frame 
+
+## Factors
+Factors are vectors with defined levels. 
+Factors are treated as discrete variables in R. 
+
+For example, the months of the year can be understood as a factor.  
+Let's say we are doing an analysis in which it's important for R to understand  
+that January comes before February and so on. 
+R has built-in month names and abbreviations. 
+```{r}
+month.abb
+```
+
+To specify the order, we will need to define it using the `factor()` function.  
+Inside the `factor()` function, we will need to use `levels = ` option to  
+define the intended order of this factor. 
+
+```{r}
+months_f <- factor(month.abb, levels = c(
+   "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+))
+
+months_f
+```
+Make sure you type in the levels in the intended order. 
+Now if you print `months_f`, the output contains the Levels line:  
+Levels: Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec , which is the right order. 
+
+You can reorder a factor by changing the order with the `levels = ` option.  
+Let's say we are planting corn, for which we plant in April and harvest in October.  
+So we need to set April as the first month, and October as the last month. 
+
+```{r}
+months_corn <- month.abb[4:10] # Use index to call out the 4th to 10th month. 
+
+months_corn_f <- factor(months_corn, levels = c(
+    "Apr", "May", "Jun", 
+   "Jul", "Aug", "Sep", "Oct"
+))
+
+months_corn_f
+```
+
+## List 
+List is a convenient way to collect data. 
+It has no restrictions on what types of data can be part of the list.  
+E.g., you can put a vector, factor, data frame, character, all into a list.  
+You can use list as a way to organize a project.  
+E.g., you can put all the objects associated with a project under a list. 
+
+Here is a toy example: 
+```{r}
+project1 <- list("A", c(1,2), months_corn_f)
+```
+
+You can pull out individual members of the list using index.  
+But in this case, you use double square brackets. 
+
+```{r}
+project1[[1]]
+```
+
+## Data frame 
+Data frame is a data table. It has rows and columns. 
+We will use the `storms` dataset from tidyverse as an example. 
+```{r}
+head(storms)
+```
+
+Note that all rows in a given column must be the same data type. 
+For example, the `name` column is all character.  
+The `year` column is all numeric.  
+The `status` column is a factor.  
+You can check the data type for each column by using `head()`. 
+The data type should be shown under the column name. 
+
+You will notice some data frames have column names. 
+You can pull out columns by their name using the `$` syntax. 
+Say I want to pull out the name column. I would do `storms$name`
+ 
+The easiest way to create a data frame is prepare it in Excel and load it in R.  
+We will go over how to do that in the next lecture. 
+But if you need to create a small data frame, you can do that in R as well.  
+
+Say I have 3 apples, 4 bananas, and 2 pears. 
+I want to organize this into a table and call this table fruits.
+What do I do?
+
+```{r}
+fruits <- data.frame(
+  name = c("apple", "banana", "pears"),
+  count = c(3, 4, 2)
+)
+
+fruits
+```
+To make a new table, you can use the `data.frame()` command.
+Inside `data.frame()`, you then type out each columns as vectors.
+In this example, the columns are name and count.
+
+# Boolean operations
+Also known as logical operations. 
+
+Here are a few things to remember: 
+
+* `==` means "equal to". `A == B` means "object A is equal to B". 
+* `=` means assign value. `A = B` means "let value of A be B". 
+* `<`, `<=`, `>`, `>=` are less than, less and equal to, greater than, and greater and equal to, respectively. 
+
+Logical operations work on both single values and vectors. 
+```{r}
+A <- c(1, 2)
+B <- c(1, 2) 
+C <- c(1, 3)
+
+A == B
+A == C
+```
+When you call a Boolean operation, it applies the operation to each member of the vector.  
+
+There is another set of logical operations. 
+
+* `&` means "and" 
+* `|` means "or" 
+* `!` means "not" 
+* `%in%` means belong to or is a subset of. 
+
+Here is how to use them. 
+
+`A & B` means both A and B must be TRUE.  
+`A | B` means either A or B or both is TRUE. 
+`A != B` means A is not equal to B. 
+`A %in% X` means A is a subset of a set X. 
+
+Let's say we want to know if apple is part of the fruits we have in the fruits data frame. 
+```{r}
+A <- "apple"
+A %in% fruits$name
+```
+In this case it's TRUE. If you check `fruits$name`,  
+it should say `c("apple", "banana", "pears")`,  
+and therefore "apple" is part of it.  
+
+# Strings 
+Any string of symbol, such as “Hello World!”, including spaces, numbers, and symbols. 
+```{r}
+"Hello World!"
+```
+You can check the number of characters in strings using `nchar()`.
+```{r}
+nchar("Hello World!")
+```
+In this case it has 12 characters including space and symbols. 
+
+You can paste any string together using `paste()`.  
+You can preview any string using `cat()`. 
+
+In addition, you can start a new line or insert white space: 
+
+* New line: "\n" (does not count towards characters)
+* Tab: "\t" (does count towards characters) 
+
+Let's say you did a t-test, 
+where the p value is 0.04.  
+And you want to print that in the code. 
+
+```{r}
+p <- 0.04
+test <- "t-test" 
+
+message <- paste("p = ", p, "\n", test, sep = "" )
+cat(message)
+```
+By default, `paste()` inserts spaces (`sep = " "`) between strings. 
+You can bypass that by changing the `sep` option. 
+
+## Regular expression. 
+Regular expression (regex) is a tool to match patterns in string. 
+R has implemented regex. 
+The stringr package (part of tidyverse) provides a lot of utility for strings and regex, which is what we will use.  
+
+Here are some useful tools (as implemented in stringr):  
+
+* Start of line: `"^"`
+* End of line: `"$"` 
+* Any one character, including space, number, and symbols: `"."` 
+* Any one numbers: `"\\d"`
+* Multiple characters: `"[]"`  
+* All letters: `"[:alpha:]"` 
+* Lower case letter: `"[:lower:]"`
+* Upper case letters: `"[:upper:]"`
+* Letters, numbers, and symbols: `"[:graph:]"`
+
+If you need one or more of the same pattern, add `"+"` to the end of the pattern. Example: 
+
+* One or more numbers: `"\\d+"`
+* One or more lower case letters: `"[:lower:]+"`
+* One or more upper case letters: `"[:upper:]+"`
+
+And so on. Note that `".+"` will match anything,   
+as it stands for "one or more of any character, including space, number, and symbols".
+
+If you need to detect a symbol that is already used to mean something else, 
+you add `"\\"` before it. For example, 
+
+* The symbol `"."` is `"\\."`
+* The symbol `"^"` is `"\\^"`
+* The symbol `"$"` is `"\\$"` 
+
+And so on. 
+
+There are a couple of exceptions to this: 
+
+* The forward slash is just `"\\"` rather than `"\\\"`. 
+* The quotation mark `"` is just `"\""` rather than `"\\""`.
+
+But these are rare.    
+
+Do not memorize. 
+You can google or refer to this lesson if you need a refresher. 
+
+## Using regex for pattern detection, extraction, and replacement with stringr functions. 
+Let's use a text string as an example: 
+
+```{r}
+test <- "abcABC123\t.!?\\(){}\n"
+cat(test)
+```
+This is the test string. 
+
+Stringr functions all start with 'str_' follow by a verb. 
+
+* `str_detect()` for detection. 
+* `str_extract()` for extraction.
+* `str_replace()` for replacement.  
+
+### Detection 
+Let's say we want to detect the string "abc" in our test string. 
+```{r}
+str_detect(test, "abc")
+```
+In this case it returns TRUE, as abc is part of the string. 
+
+If you want to detect "Abc", it will be
+```{r}
+str_detect(test, "Abc")
+```
+In this case, it will be FALSE, as the exact string upper case A followed by lower case bc is not present in the string. 
+
+If you want to detect upper case A or lower case b or lower case c,  
+you will need the square brackets syntax. 
+```{r}
+str_detect(test, "[Abc]")
+```
+In this case it is TRUE.  
+
+### Extraction
+Let's say we want to extract part of the string containing a, A, or 1.  
+```{r}
+str_extract(test, "[aA1]")
+```
+You will see it only returns "a", even though A and 1 are also present in the test string.   
+This is because the default behavior of `str_extract()` stops at the 1st occurrence. 
+What you will need is `str_extract_all()`. 
+
+```{r}
+str_extract_all(test, "[aA1]")
+```
+If you do that, you should get a list containing 3 elements: "a", "A", "1". 
+
+Let's say you want to extract all numbers in your string: 
+```{r}
+str_extract_all(test, "\\d")
+```
+
+### Replacement 
+Replacement is very much like extraction,  
+but now we need to specify the string to replace with. 
+
+Let's replace abc to upper case letter.  
+Remember, if you need to detect all occurrences of a pattern,  
+don't forget to use `str_replace_all()`. 
+```{r}
+str_replace_all(test, "abc", "ABC")
+```
+If you want to change from upper to lower case letters, 
+or vice versa, simply use `str_to_upper()` or `str_to_lower()`. 
+
+```{r}
+str_to_upper(test)
+```
+Say you want to remove all numbers,  
+what you need to do is replace all numbers with "", which is quotation marks with nothing inside.  
+```{r}
+str_replace_all(test, "\\d+", "")
+```
+Now all the numbers are gone. 
+
+# In class activity 
+## Q1 
+The academic year at MSU starts in Aug and ends in May. 
+Create a factor starting in Aug and ends in May. 
+
+## Q2 
+1.  Use the following info to make a data frame and save it as an item called "grade".
+    Adel got 85 on the exam, Bren got 83, and Cecil got 93.
+    Their letter grades are B, B, and A, respectively.
+    (Hint: How many columns do you need to have?)
+
+2. Pull out the column with the scores.
+    Use the `$` syntax.
+    
+## Q3 
+Write a Boolean operation to evaluate if square root of 5 is greater than pi.
+
+## Q4
+Here is a sequence of a protein called [CPC from Arabidopsis](https://www.uniprot.org/uniprotkb/O22059/entry): 
+
+`MFRSDKAEKMDKRRRRQSKAKASCSEEVSSIEWEAVKMSEEEEDLISRMYKLVGDRWELIAGRIPGRTPEEIERYWLMKHGVVFANRRRDFFRK` 
+
+Here is the sequence of a bHLH-binding motif: 
+`[D/E]Lxx[K/R]xxxLxxxxxxLxxxR`, where x is any amino acid residues,  
+[D/E] means D or E, and [K/R] means K or R. 
+
+1. Does this protein contain a bHLH binding motif? 
+Print its sequence. 
+Hint: what should the regex be? Make sure your protein is read as a single line.
+
+2. Mutate all leucine (L) within the bHLH binding motif to lysine (K). 
+Print the full length protein sequence of the mutant. 
+
+
+## Q5
+You have 3 samples:
+`c("sample-1", "Sample-2", "sample_3")`
+
+Use `str_replace_all()`to change the upper case "S" to lower case "s" and  
+change all hyphens to underscores. 
+Hint: how many steps do you need? 
+
+## Q6 
+Run `str_extract_all(test, "\\d")` and `str_extract_all(test, "\\d+")`. 
+Can you explain what causes the differences in the results? 
+
+
+
+
+
+
+
+

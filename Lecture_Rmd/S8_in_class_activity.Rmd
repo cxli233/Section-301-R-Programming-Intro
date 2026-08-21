@@ -1,0 +1,400 @@
+---
+title: "Session 8 in-class activity"
+author: "Chenxin Li"
+date: "2026-06-17"
+output: html_notebook 
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction 
+In this lesson, we will cover: 
+
+1. How are data represented in visualizations? 
+2. What is "the grammar of graphics"? 
+3. Introduction to ggplot: mapping variables to axis and aesthetics. 
+
+# Packages
+`tidyverse` will be doing all the heavy lifting. 
+Please install `RColorBrewer` using the "Packages" panel at the lower right. 
+We will be using some color sets from `RColorBrewer`. 
+```{r}
+library(tidyverse)
+library(readxl)
+library(RColorBrewer)
+```
+
+# How are data represented in visualization? 
+As an example, let's simulate some data: 
+```{r}
+set.seed(666)
+Example_data1 <- rbind(
+  rnorm(3, mean = 5, sd = 0.5) %>%
+    as.data.frame() %>% 
+    mutate(TP = 1),
+  rnorm(3, mean = 8, sd = 0.5) %>% 
+    as.data.frame() %>% 
+    mutate(TP = 2),
+  rnorm(3, mean = 10, sd = 0.5) %>%
+    as.data.frame() %>% 
+    mutate(TP = 3)
+) %>% 
+  rename(response_sec = ".")
+```
+
+| response | time |
+|:--------:|:----:|
+| 5.376656 |   1  |
+| 6.007177 |   1  |
+| 4.822433 |   1  |
+| 9.014084 |   2  |
+| 6.891563 |   2  |
+| 8.379198 |   2  |
+| 9.346907 |   3  |
+| 9.598740 |   3  |
+| 9.103880 |   3  |
+
+As you can see, the data are stored in this table. This is already a tidy data frame. 
+It has two columns, "response" and "time". It appears each time point has 3 observations. 
+
+If you were to just print this table, it will be a perfectly correct representation of the data.  
+For example, if you read the numbers, you probably notice the response variable goes up as time progresses.  
+
+But that is NOT the point of data visualization. 
+The purpose of data visualization is to create a visual and intuitive representation of the data. 
+A good data visualization allows us to gain insight into the data at a glance. 
+That being said, what are the ways to visually represent data? 
+
+* By position, such that the data is represented by position along the axis.    
+* In bar plots, values are represented by the distance from the x axis, and thus the length of the bar.   
+* Data can be represented by color, such as in heat maps.   
+* Lastly, data can be represented by how elements are arranged relative to each other, such as how rows & columns are grouped and ordered in a heat map. 
+
+# ggplot: data visualization using the grammar of graphics
+We will use `ggplot()` to produce graphs. 
+The "gg" in `ggplot()` stands for grammar of graphics, a theoretical framework to visualize data. 
+In grammar of graphics, each visualization has the following layers: 
+
+1. Coordinates: what are on x and y axis? 
+2. Geometric objects ("geom"): e.g., bars, points, lines... 
+3. Mapping: mapping colors, size, and transparency to geometric objects.
+
+For more resources, you can look at the [ggplot cheat sheet](https://statsandr.com/blog/files/ggplot2-cheatsheet.pdf). 
+
+Let's build a scatter plot for our example data. 
+Usually I start with the data table and pipe it into `ggplot()` using the pipe `%>%` syntax.
+Inside the `ggplot()` function, there is this `aes()` argument. 
+Inside the `aes()` argument, it takes the x and y variables. 
+
+```{r}
+Example_data1 %>% 
+  ggplot(aes(x = TP, y = response_sec)) +
+  theme_classic()
+```
+
+If we just do that, we get a blank graph with time on x axis and response on y axis. 
+The `theme_classic()` only change the appearance of the background. Read more [here](https://ggplot2.tidyverse.org/reference/ggtheme.html).
+ggplot comes with a collection of themes. My go-to is "classic". It has white background and axis lines, as you can see in this example. 
+
+The graph is blank because we haven't added any geometric objects (geom) yet. 
+For the sake of this example only, let's make a scatter plot. We will need some points. 
+The command to add points in `ggplot` is `geom_poit()`. 
+
+```{r}
+Example_data1 %>% 
+  ggplot(aes(x = TP, y = response_sec)) +
+  geom_point() +
+  theme_classic()
+```
+This is how the graph looks after we added points. 
+To include more layers, you add (using the `+` syntax) layers to the existing code. 
+After the `ggplot()` line which initiates the graph, I usually add the geom layers before the other layers, then add the `theme` layer last. 
+
+It's very important to have legible axis labels. 
+To change the axis, you will need `labs(x = "something", y = "something")` 
+
+```{r}
+Example_data1 %>% 
+  ggplot(aes(x = TP, y = response_sec)) +
+  geom_point() +
+  labs(x = "Time point",
+       y = "Response") +
+  theme_classic()
+```
+For a minimal plot, we are done!  
+
+# Mapping variables to ggplot geom 
+The example data we are using only have 2 variables: time and response. What if we have more than 2? 
+To demonstrate that, let's use another example. 
+
+I am going to read into child mortality, birth rate, and income data.  
+For the sake of this example, we will just use year 1945. 
+
+First, read in data.  
+Second, re-shape data into tidy format. 
+```{r message=F}
+income <- read_csv("../Data/S6_activity1.csv")
+income_tidy <- income %>% 
+  pivot_longer(cols = !country, names_to = "year", values_to = "income") 
+
+mortality <- read_csv("../Data/S7_activity1.csv")
+mortality_tidy <- mortality %>% 
+  pivot_longer(cols = !country, names_to = "year", values_to = "mortality") 
+
+births <- read_csv("../Data/S7_activity2.csv")
+births_tidy <- births %>% 
+  pivot_longer(cols = !country, names_to = "year", values_to = "births") 
+```
+
+Third, join them together. 
+```{r}
+income_mortality_births <- income_tidy %>% 
+  inner_join(mortality_tidy, by = c("country", "year")) %>% 
+  inner_join(births_tidy, by = c("country", "year"))
+
+head(income_mortality_births)
+```
+
+Fourth, filter for year 1945. 
+```{r}
+income_mortality_births_1945 <- income_mortality_births %>% 
+  filter(year == 1945)
+```
+
+Let's say we want to make a scatter plot with birth rate on the x axis and mortality on the y axis, and color the dots by income.
+We can make a plain scatter plot first. 
+We can also add a title by using the `title` option in `labs()`.  
+
+```{r}
+income_mortality_births_1945 %>% 
+  ggplot(aes(x = births, y = mortality)) +
+  geom_point() +
+  labs(x = "Birth rate",
+       y = "Child mortality/1000 born",
+       title = "Year 1945") +
+  theme_classic()
+```
+To color dots (or any geom) based on a variable in the data frame, you open an `aes()` argument inside the `geom()`.  
+Let's say we want to color by income. 
+```{r}
+income_mortality_births_1945 %>% 
+  ggplot(aes(x = births, y = mortality)) +
+  geom_point(aes(color = log10(income))) +
+  labs(x = "Birth rate",
+       y = "Child mortality/1000 born",
+       title = "Year 1945") +
+  theme_classic()
+```
+
+Note: income is quite unevenly distributed, so I log-transformed it. 
+Now we have dots colored by income (in log10 scale).
+We can use a different set of colors from the `RColorBrewer` package if you do not like the default color scale in ggplot. 
+You can look at all the available color scales in `RColorBrewer` [here](https://r-graph-gallery.com/38-rcolorbrewers-palettes.html). 
+Let's use something easier to see than the default ggplot blue. 
+
+You can change the color scale using the `scale()` family functions. 
+```{r}
+income_mortality_births_1945 %>% 
+  ggplot(aes(x = births, y = mortality)) +
+  geom_point(aes(color = log10(income))) +
+  scale_color_gradientn(colours = brewer.pal(9, "YlGnBu")) + 
+  labs(x = "Birth rate",
+       y = "Child mortality/1000 born",
+       title = "Year 1945") +
+  theme_classic()
+```
+To provide a custom color scale that produces a color gradient, use `scale_color_gradientn())`.
+Here is a whole family of `scale` functions in ggplot, which allows you to control the scales for colors and axis.  
+You can read more about scales on the [ggplot cheat sheet](https://statsandr.com/blog/files/ggplot2-cheatsheet.pdf). 
+I quite like the yellow-green-blue color gradient from `RColorBrewer`, which is what I used here. 
+As you can see, low income countries have a higher birth rate and also higher child mortality.   
+
+# Line plots with ggplot 
+Line plot is an effective way to communicate each line is one group and one sequence of data.   
+When you need to make a line plot, you could be doing one of the following things:  
+
+1. Connecting individual data points, when each (x,y) position has a unique value.  
+2. Connecting averages, when each independent variable position has multiple data points. 
+
+## Connecting individual data points 
+Let's use the crop yield data as an example. 
+```{r}
+crop_yield <-  read_csv("../Data/S6_example1.csv", col_names = T)
+crop_yield_long <- crop_yield %>% 
+  pivot_longer(cols = !Crop, names_to = "Year", values_to = "Yield") %>% 
+  filter(is.na(Yield) == F) %>% 
+  mutate(Year = as.numeric(Year))
+
+head(crop_yield_long)
+```
+
+I went ahead and loaded it, converted it to tidy form, removed missing yield values, and changed the year to a numeric variable.   
+Now it's all good to go. 
+Let's make a line plot to showcase how yield has changed over the years for each crops. 
+To do that, we will need `aes(x = Year, y = Yield)` inside `ggplot()`. 
+We will use `geom_line()`.  
+Since we need one line per crop, the syntax is `geom_line(aes(group = Crop))`. 
+
+```{r}
+crop_yield_long %>% 
+  ggplot(aes(x = Year, y = Yield)) +
+  geom_line(aes(group = Crop, color = Crop)) +
+  scale_color_manual(values = brewer.pal(n = 8, "Dark2")) +
+  labs(x = "Year", y = "Crop yield") +
+  theme_classic()
+```
+I also asked R to color the lines by crop. 
+Then I set the color to "Dark2" of the RcolorBrewer collection.  
+I also manually set the x and y axis titles.  
+
+There is one problem here. The yield of each crop are in different units, so it wouldn't be correct to plot them on the same plot. 
+Also, there are no data for canola until the mid 90s. 
+One solution is to make an individual sub-plot per crop. The jargon is "facet". 
+The syntax is `facet_wrap(~variable_of_interest)`, in this case it would be `~Crop`.
+
+```{r}
+crop_yield_long %>% 
+  ggplot(aes(x = Year, y = Yield)) +
+  facet_wrap(~Crop, scales = "free") +
+  geom_line(aes(group = Crop, color = Crop)) +
+  scale_color_manual(values = brewer.pal(n = 8, "Dark2")) +
+  labs(x = "Year", y = "Crop yield") +
+  theme_classic()
+```
+I also added `scales = "free"` in `facet_wrap()`
+such that each sub-plot will have a different scale that is more appropriate for the data in the subplot. 
+We will talk more about using facets in later lectures. 
+In general, facets are very powerful and should be considered when applicable. 
+
+## Connecting means 
+In the crop example, for each crop, there is only one value per year. 
+For many experiments, there will be multiple replicates per treatment. 
+In that case, we don't actually want to connect the individual data points. 
+We want to connect the average of the replicates instead. 
+
+Let's do an example (hypothetical data). 
+```{r}
+small_RNA <- read_excel("../Data/S8_example1.xlsx")
+head(small_RNA)
+```
+
+Small RNA are RNAs that are between 20 to 25-nt long. 
+You profiled small RNA in 3 cell types (sperm, egg, and somatic cells) using high throughput sequencing. 
+Each cell types have 3 replicates. 
+You recorded the % of small RNA relative to total reads. 
+
+First we will need to turn this wide format table into a tidy data frame. 
+Then we will need to create a new column called "cell_type". 
+```{r}
+small_RNA_tidy <- small_RNA %>% 
+  pivot_longer(cols = !length_classes, names_to = "sample", values_to = "smRNA_abundance") %>% 
+  mutate(cell_type = case_when(
+    str_detect(sample, "sperm") ~ "sperm",
+    str_detect(sample, "egg") ~ "egg",
+    str_detect(sample, "somatic") ~ "somatic"
+  ))
+
+head(small_RNA_tidy)
+```
+
+Now we can make a line plot where each line is a cell type with RNA length on the x-axis and abundance on the y-axis. 
+`ggplot()` has built-in summary statistics utility. 
+The syntax is `stat_summary()`.  
+Inside `stat_summary()`, if you need a line, you will call `geom = "line"`. It also requires the function of summary statistics, 
+so you will call `mean_se`, which stands for mean and standard error. 
+Then the rest is similar to normal `geom_line()`, where inside `aes()` you will call `group = cell_type`. 
+Similarly, you can also add standard errors of mean as error bars using `geom = "linerange"` in another line of `stat_summary()`. 
+
+```{r}
+small_RNA_tidy %>% 
+  ggplot(aes(x = length_classes, y = smRNA_abundance)) +
+  geom_point(aes(color = cell_type)) + 
+  stat_summary(geom = "line", fun.data = mean_se, aes(group = cell_type, color = cell_type)) +
+  stat_summary(geom = "linerange", fun.data  = mean_se, aes(color = cell_type)) +
+  scale_color_manual(values = c("tomato1", "seagreen", "dodgerblue2")) +
+  labs(x = "smRNA length (nt)",
+       y = "smRNA abundance (% of reads)",
+       color = "cell type") +
+  theme_classic()
+```
+I color the dots and lines by cell type. 
+Manually set the axis titles, legend title, as well as the color set. 
+
+# Saving ggplot to disk 
+We haven't saved any of our graphs. 
+To save our graphs to disk, we can use `ggsave()`, which supports vector (.svg), PDF, and pixel (.png) formats.  
+You will need to specify the dimension of the output using width and height options. 
+You will also need to specify export directory and file name. 
+
+## Saving a ggplot as an object first 
+There are two ways to export a graph to disk. 
+The first way is to save your graph as an object first. 
+```{r}
+smRNA_line_plot <- small_RNA_tidy %>% 
+  ggplot(aes(x = length_classes, y = smRNA_abundance)) +
+  geom_point(aes(color = cell_type)) + 
+  stat_summary(geom = "line", fun.data = mean_se, aes(group = cell_type, color = cell_type)) +
+  stat_summary(geom = "linerange", fun.data  = mean_se, aes(color = cell_type)) +
+  scale_color_manual(values = c("tomato1", "seagreen", "dodgerblue2")) +
+  labs(x = "smRNA length (nt)",
+       y = "smRNA abundance (% of reads)",
+       color = "cell type") +
+  theme_classic()
+
+ggsave(plot = smRNA_line_plot, "../Results/S8_example1.svg", height = 3, width = 3)
+ggsave(plot = smRNA_line_plot, "../Results/S8_example1.png", height = 3, width = 3)
+```
+
+Now I have saved the small RNA line plot to the Results folder as both svg and png formats. 
+The default unit for height and width is inches. 
+The best plot size is big enough to accommodate all text and elements, but small enough to not take up extra space on your paper or poster. 
+3x3 is a good starting point, and you might need to adjust the export dimension a few times to find the best dimension. 
+
+## Not saving ggplot as an object 
+When you call `ggsave()` without specifying which plot to save, it will default to the last graph that you plotted.  
+If you want to use this approach, make sure you save the graph right after it is plotted. 
+```{r}
+crop_yield_long %>% 
+  ggplot(aes(x = Year, y = Yield)) +
+  facet_wrap(~Crop, scales = "free") +
+  geom_line(aes(group = Crop, color = Crop)) +
+  scale_color_manual(values = brewer.pal(n = 8, "Dark2")) +
+  labs(x = "Year", y = "Crop yield") +
+  theme_classic()
+
+ggsave("../Results/S8_example2.svg", height = 4, width = 6.5)
+ggsave("../Results/S8_example2.png", height = 4, width = 6.5)
+```
+
+# In class activity 
+## Q1 
+Using the income, birth rate, and mortality data, 
+graph income (in log10 scale) on the x axis and child mortality on the y axis from year 2000 to year 2010.  
+Make sure to have legible axis titles. 
+Hint: you can use facet by year, or use color by year.  
+Save your graph using `ggsave()`. 
+
+## Q2 
+Check the first 6 lines of the built-in `ToothGrowth` dataset.  
+Experimental animals were supplemented with either "VC" or "OJ" (the `supp` column). 
+The independent variable is dose of supplement. 
+The dependent variable is tooth length (`len`). 
+Each dose and supplement has multiple replicates. 
+
+Make a line plot, one line per supplement. 
+The line should connect the means of each dose. 
+Add error bars representing standard error of the mean. 
+Color data points, line, and error bars by treatment.  
+Color the OJ treatment with "grey", and the VC treatment with "tomato". 
+Make sure to have legible axis and legend titles. 
+Hint: you will need to use `stat_summary()` twice. 
+
+Save your graph using `ggsave()`.  
+
+
+
+ 
+
+

@@ -1,0 +1,351 @@
+---
+title: "Session 6 in-class activity"
+author: "Chenxin Li"
+date: "2026-06-17"
+output: html_notebook 
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction 
+In this lesson, we will go over basic operations to tabular data. 
+We will go over: 
+
+* What is a tidy data frame? 
+* Wide-to-long and long-to-wide operations. 
+* Basic verbs for data frames. 
+* Downstream processing of batch-imported tables. 
+
+# Packages
+For this lesson, we will need `readxl` to read an Excel file.  
+In addition, we will need the `tidyverse`. 
+```{r}
+library(readxl)
+library(tidyverse)
+```
+
+# What is tidy data?
+A data frame is tidy if: 
+
+* Each row is an observation. 
+* Each column is a variable. 
+
+Let's load an example.
+We will use Li's job search tracking sheet (example 1 from Session 5). 
+```{r}
+S5_example1 <- read_excel("../Data/S5_example1.xlsx")
+S5_example1
+```
+
+In this table, each row is a position that I applied to. 
+It has 19 rows, so there are 19 observations.  
+Each column is a variable (or attribute): school, department, URL, deadline, key words and so on. 
+So this is a tidy data frame. 
+
+# Wide-to-long operation 
+Now let's look at another example. 
+```{r}
+S6_example1 <- read_csv("../Data/S6_example1.csv", col_names = T)
+head(S6_example1)
+```
+
+In this example, we have crops (barely, canola, corn, and so on) as rows. 
+Each column is an year. 
+The value of the table is the yield at any given year. 
+Is this a tidy data frame? 
+
+```{r}
+dim(S6_example1)
+```
+If we check the dimension of the data, we will find that there are 8 rows and 79 columns. 
+So we have 8 crops and 78 years of data (not counting the 1st column because it's the crops themselves). 
+In total, we could have 8*78 = 624 observations, so the tidy form of this data should have up to 624 rows. 
+
+There are up to 78 years of data for each crop, but the observations are spread out in 78 columns.  
+Observations spreading out in columns is sometimes called the wide format.   
+The wide format is easy for data collection, but unfortunately it's not how R would like to read data.   
+R likes tidy data, and tidy data frames need each observation to be in its individual row.   
+
+To convert a wide table into a tidy table, the command is `pivot_longer()`.  
+The syntax is `pivot_longer(columns, names_to = "name", values_to = "value")` 
+
+What we need is 3 columns, corresponding to the 3 variables we have in hand. 
+
+1. Crop
+2. Year 
+3. Yield 
+
+We will use the pipe syntax here (`|>` or `%>%`). 
+We start with our data `S6_example1` and feed it into `pivot_longer()`. 
+In this example, we need to select all columns that are not `Crop`.  
+The former column names will be stored as a new variable called "Year".  
+The values of the old table will be stored as a new variable called "Yield".  
+Let's give that a try. 
+
+```{r}
+S6_example1_long <- S6_example1 %>% 
+  pivot_longer(cols = !Crop, names_to = "Year", values_to = "Yield") 
+
+head(S6_example1_long)
+```
+
+```{r}
+dim(S6_example1_long)
+```
+Now if you check the dimensions of the data,  
+you will see it has exactly 8*78 = 624 rows and 3 columns, 
+which is what we should expect if each row is an observation.  
+However, there is just one problem.  
+If you look at the first 6 rows of the data frame using `head()`, you will see that  
+the `Year` column is recorded as a character (`<chr>` shown under the column name) instead of numeric variable.  
+We will need to fix that later. 
+
+Let's try another example. This time it's a hypothetical example that I made up.
+```{r}
+#ignore this chunk. It simulates the data.
+example_data <- data.frame(
+  "sample1" = c(1, 2, 3),
+  "sample2" = c(2, 2, 2),
+  "sample3" = c(3, 2, 1)
+) %>% 
+  mutate(gene = c("gene1", "gene2", "gene3"))
+
+head(example_data)
+```
+In this experiment, 
+you are looking at the expression of three genes (gene1 to gene3) in three samples (sample1 to sample3).
+So you have 3 * 3 = 9 observations.
+This is not a tidy data frame because the 9 measurements of expression are spread out in 3 columns.
+We can tidy it using the `pivot_longer()` command:
+
+```{r}
+example_data_tidy <- example_data %>% 
+  pivot_longer(names_to = "sample", values_to = "expression", cols = c(sample1, sample2, sample3)) 
+
+example_data_tidy
+```
+
+1.  The "name" column is now "sample": it houses which original columns the data came from (sample1 to sample3).
+2.  The "value" column is "expression": it is the variable that was actually measured.
+3.  The columns to collect data from were sample1 to sample3. Alternatively, `cols = !gene` (all columns but gene) should also work. 
+
+Now this is a tidy data frame. Each row is an observation. Each column is a variable.
+We have 3 variables: sample (3 samples), genes (gene1 to gene3), and expression (numeric).
+
+# Long-to-wide operation. 
+Some statistical tools require the data to be in the wide form. 
+The reverse operation is `pivot_wider()`. 
+You will need to specify which column will become the new column names (`names_from`). 
+And which column to fill the data table with (`values_from`).  
+
+```{r}
+example_data_wide <- example_data_tidy %>% 
+  pivot_wider(names_from = "sample", values_from = "expression")
+
+example_data_wide
+```
+We will see that this is the exact reverse operation to `pivot_longer()`. 
+
+# Basic operations to a data frame.
+The 3 most commonly used basic verbs for data frames are `select()`, `filter()`, and `mutate()`. 
+
+## Selecting columns by name. 
+Using our tidy example1 data now,
+say we only want the columns Crop and Yield and leave out the rest of the columns.
+The command is simple, just `select()` the columns you want.
+
+```{r}
+head(S6_example1_long)
+
+S6_example1_long_2 <- S6_example1_long %>% 
+  select(Crop, Yield) #just selecting Crop and Yield 
+
+head(S6_example1_long_2)
+```
+
+Now we just get two columns.
+
+### Filter by Boolean logic 
+The more useful subsetting function is subsetting by rows based on the values of one or more columns.
+The command is `filter()`.  
+
+In the example, let's say we only want years that have data because data were not collected in certain years for some crops.  
+```{r}
+S6_example1_long_3 <- S6_example1_long %>% 
+  filter(is.na(Yield) == FALSE)  # filter for rows that the Yield value is not NA  
+
+dim(S6_example1_long)
+dim(S6_example1_long_3)
+```
+In this example, we want to find Yield values that are not `NA`. 
+R has a built-in function for that, which is `is.na()`.  
+We want Yields that are not `NA`, so we will use the Boolean logic `is.na(Yield) == FALSE`.  
+Remember, in R, you use `==` to mean "equal to". 
+
+
+Let's say we only want corn. 
+```{r}
+S6_example1_long_corn <- S6_example1_long %>% 
+  filter(Crop == "corn") 
+
+head(S6_example1_long_corn)
+```
+
+* "corn" has to be in quotes since this is referring to characters in R. 
+* In this case "corn" has a lowercase "c". We need exact matches, which is case sensitive. 
+
+### Filter with complex conditions 
+Let's say you want to filter for corn and wheat. 
+```{r}
+S6_example1_long_corn_wheat <- S6_example1_long %>% 
+  filter(Crop == "corn" | 
+           Crop == "wheat") 
+
+head(S6_example1_long_corn_wheat)
+```
+
+Remember the vertical bar `|` means "or" in R. In this chunk you are filtering for either corn or wheat.
+You shouldn't use `&` ("and") here, because there is no crop that is both corn and wheat.
+
+An alternative approach is to use the `%in%` syntax here. 
+```{r}
+S6_example1_long_corn_wheat <- S6_example1_long %>% 
+  filter(Crop %in% c("corn", "wheat")) 
+
+head(S6_example1_long_corn_wheat)
+```
+
+### Filter with string and regex 
+Another alternative approach is to use string detection.  
+
+```{r}
+S6_example1_long_corn_wheat <- S6_example1_long %>% 
+  filter(str_detect(Crop, "orn|heat")) 
+
+head(S6_example1_long_corn_wheat)
+```
+
+## Create new columns 
+To create new columns you use `mutate()`.  
+It is just as versatile and powerful as `filter()`.  
+
+### Simple transformations 
+```{r}
+head(S6_example1_long)
+```
+
+In this example, the `Year` is stored as a character variable. Let's change that to a numeric variable. 
+
+```{r}
+S6_example1_long_4 <- S6_example1_long %>% 
+  mutate(Year = as.numeric(Year)) 
+
+head(S6_example1_long_4)
+```
+
+You should note that when you create a new column but you use an existing column name (in this case Year),  
+the existing column will be overwritten by the new column. 
+
+### Create new column by formula 
+You can do any arithmetic operations to a numeric variable within `mutant()`.  
+More importantly, you can specify a different formula based on values of other values.  
+
+Let's say the yield for every crop other than cotton, canola, and rice were recorded in bushel/acre. Cotton, canola, and rice were recorded in lbs.  
+The number of pounds in a bushel vary by grain.  
+Let's say there are 60 lbs/bu for wheat, 56 lbs/bu for corn,
+48 lbs/bu for barley, 60 lbs/bu for soybean, and 56 lbs for sorghum. 
+Let's convert all the yield units to lbs/acre.  
+
+To do that, we will need a new tool `case_when()`.  
+`case_when()` is an extremely useful command within `mutate()`.
+The syntax is `case_when(condition ~ outcome)`.
+For example, when Crop is barley, we need to apply a value of 48 lbs/bu. 
+
+```{r}
+S6_example1_long_lbs <- S6_example1_long %>% 
+  mutate(Yields_lbs = case_when(
+    Crop == "barley" ~ Yield * 48,
+    Crop == "corn" ~ Yield * 56, 
+    Crop == "soybean" ~ Yield * 60,
+    Crop == "sorghum" ~ Yield * 56, 
+    Crop == "wheat" ~ Yield * 60,
+    T ~ Yield
+  ))
+
+head(S6_example1_long_lbs)
+```
+
+The `T ~ ...` inside `case_when()` stands for "for the rest that are not the above". 
+I hope you can appreciate that this is very powerful and convenient. 
+The syntax is relatively easy to understand.  
+This approach also saves you from having to write nested if statements. 
+
+### Create a new column using values of other columns. 
+Let's say you want to classify crops into different categories.  
+We have 8 crops and we want to classify: 
+ 
+* cotton as a fiber crop 
+* canola and soybeans as an oil crop 
+* rice, corn, wheat, barely and sorghum as grains 
+
+```{r}
+S6_example1_long_5 <- S6_example1_long %>% 
+  mutate(Category = case_when(
+    Crop == "cotton" ~ "fiber",
+    str_detect(Crop, "canola|soy") ~ "oil",
+    T ~ "grain"
+  ))
+```
+
+# Downstream processing of batch-imported tables. 
+Last lecture we talked about how to apply a function across a list to batch import data files into R. 
+This lecture we will pick up from there and continue processing them. 
+We will use the files in "../Data/batch_import_example1" folder. 
+```{r}
+file_list1 <- list.files("../Data/S5-batch_import_example1/", pattern = ".cov",
+                         full.names = T)
+file_list1
+length(file_list1)
+```
+We have 21 files. 
+
+Tidyverse has the utility to bind data frames as rows of each other if they have the same columns.  
+To do that, you use the `bind_rows()` function. 
+Inside `bind_rows()`, you have the `.id = "id"` option. 
+This will create a new column called `id` to keep track of the original identity of the rows. 
+
+```{r message=F}
+result1 <- lapply(file_list1, FUN = read_delim, 
+      delim = "\t", col_names = F) %>% 
+  bind_rows(.id = "id")
+
+head(result1)
+```
+
+In this case, the rows from the original file 1 will have an id value of 1. 
+The rows from the original file 2 will be have an id value of 2, and so on. 
+
+You can also append the original file name to this big result table by doing some quick data wrangling. 
+We will talk about how to do that in the next lesson, which involves combining two or more data tables by column. 
+
+# In class activity 
+## Q1 
+Read S6_activity1.csv from the Data folder into R. 
+Data source: the [Gapminder foundation](https://www.gapminder.org/data/). 
+
+1. Turn the data table into a tidy data frame. 
+In this example, each row is a country, each column is a year, and the values are average person income in USD. 
+
+2. Produce a data table with just data for Bangladesh and Sweden, in years 1945 (when WWII ended) and 2010. 
+
+3. Let's say for countries with income between 1000 to 10,000 dollars per year, they are called "fed".
+For countries with income above 10,000 dollars per year, they are called "wealthy".
+Below 1000, they are called "poor".
+Use this info to make a new column called "status".
+Hint: you will have to use case_when() and the "&" logic somewhere in this chunk. 
+
+## Q2
+Batch import data files from `Data/S5-batch_import_example2`.  
+Convert it to a single data frame with the original identity of the rows tracked with an id column.  

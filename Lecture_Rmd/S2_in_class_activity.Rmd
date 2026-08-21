@@ -1,0 +1,272 @@
+---
+title: "Session 2 in-class activity"
+author: "Chenxin Li"
+date: "2026-06-15"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+In this lesson, we will go over some R coding fundamentals.  
+We will cover: 
+
+1. Arithmetic
+2. Data types in R 
+3. Vectors 
+4. Matrices 
+
+# Let's do some math!
+Adding, subtracting, multiplying, and dividing. 
+```{r}
+1 + 1
+```
+If you type 1 + 1 and run the line of code,  
+you should get [1] 2. The `[1]` in the output means it's a single value. 
+R understands the sequence of operation when you use parentheses. 
+```{r}
+1 + 1 * 5 / 2
+((1 + 1) * 5)/2
+```
+
+## Mathematically functions. 
+R has implemented many commonly used functions. 
+Let's try square root first. It's `sqrt()`.  
+```{r}
+sqrt(2)
+```
+R has a log() function. Type ?log in the console to learn how to use it.  
+You will see that the default is natural log.  
+If you want to use log base 10, you will either do `log10()` or `log(base = 10)` 
+```{r}
+log10(1000)
+```
+
+## Scientific notations
+You can use scientific notations in R using `e`.
+For example, 10^6 is 1e6 and 1 ng is 1e-9 gram. 
+
+```{r}
+1e6 
+1e-9
+```
+
+## Assigning variables and storing them in the memory. 
+Let's say you have a variable x that is equal to 100. 
+```{r}
+x <- 100 
+```
+
+You will need to use the left arrow.  
+Now if you call x, R will print its value. 
+```{r}
+x
+```
+Now if you check the upper right corner of RStudio in the Environment area, you should see x.  
+Another way to check what variables you have stored in the memory is the `ls()` function.
+
+```{r}
+ls()
+```
+```{r}
+x <- 200 
+```
+
+Using the same variable name will overwrite the variable.  
+These variables are stored in the memory of R. After you close R, they will be gone.  
+We will talk about how to write things into the hard drive in later lectures.  
+
+# Data types in R 
+R has a few basic data types: 
+
+1. numeric 
+  - integer 
+  - decimal 
+2. logical 
+3. character 
+
+## Numeric 
+Numeric data should be self-explanatory. 
+
+## Logical 
+Logical or Boolean data is either TRUE or FALSE.  
+Use all uppercase letters to denote them.  
+Alternatively, they are denoted by single uppercase letters T and F. 
+```{r}
+TRUE 
+FALSE
+T
+F
+```
+You will see that they are rendered as blue text in the code chunk. 
+
+## Character 
+One important thing to remember in R is that characters must be in quotes. 
+```{r}
+"x"
+x
+```
+
+R will understand `"x"` as the character "x".  
+R will understand `x` as the variable we stored earlier. 
+
+```{r}
+'x'
+```
+
+Single quotation marks also work, as long as they come in a pair.   
+
+# Vectors 
+Imagine a column in a data table. That's a vector in R. 
+To create a new vector, you use the `c()` function. 
+```{r}
+my_vector1 <- c(1,2,3)
+my_vector1
+```
+Note that all members of a vector must be the same type of data.  
+E.g., all numeric, all logical, or all character, but not mixed. 
+```{r}
+my_vector2 <- c("a", "b", "c")
+```
+
+You can create vectors using the `seq()` function.  
+Type ?seq in the console to learn how to use it. 
+Say you want a sequence from 0 to 100, by increments of 10.   
+```{r}
+my_vector3 <- seq(from = 0, to = 100, by = 10)
+my_vector3
+```
+
+You can also repeat a sequence many times using `rep()`. 
+Let's repeat `my_vector1` 3 times.  
+```{r}
+my_vector1_repeated3 <- rep(my_vector1, times = 3)
+my_vector1_repeated3
+```
+
+You can check the length of a vector using `length()`
+```{r}
+length(my_vector1_repeated3)
+```
+
+## Pull out specific members of a vector using indexes. 
+Say we want the first, second, and eighth member of `my_vector1_repeated3`. 
+```{r}
+my_vector1_repeated3[c(1,2,8)]
+```
+## Arithmetic across vector 
+When an arithmetic operation is applied to a vector,  
+R will apply the operation to every element of the vector.  
+```{r}
+my_vector1_repeated3+1
+```
+
+```{r}
+sqrt(my_vector1_repeated3)
+```
+## Summary stats across vector 
+You can calculate `sum()`, average `mean()`, `median()`, and standard deviation `sd()`  
+using built-in functions. For example: 
+```{r}
+sum(my_vector1_repeated3)
+mean(my_vector1_repeated3)
+```
+
+# Matrix 
+If you need to do linear algebra,  
+you will need to use the matrix utility in R.  
+The best way to create a matrix is to bind different vectors together.  
+
+We have two ways to bind vectors together:
+
+* by row: `rbind()`
+* by column: `cbind()`. 
+
+Example: 
+```{r}
+my_mat1 <- rbind(c(1, 2, 3, 4),
+                 c(5, 6, 7, 8),
+                 c(0, 0 ,0 ,0))
+
+my_mat1
+```
+Also note that all members of the matrix need to be same data type. 
+
+Like vectors, arithmetic and summary statistics work on matrix too. 
+```{r}
+sum(my_mat1)
+mean(my_mat1)
+```
+
+You can check the dimension of matrix using `dim()`. 
+```{r}
+dim(my_mat1)
+```
+
+Like vectors, you can select specific rows and columns using indexes (square brackets[]). 
+Say you want the first row: 
+
+```{r}
+my_mat1[1, ]
+```
+Or the 2nd column
+```{r}
+my_mat1[,2]
+```
+Because the matrix has 2 dimensions, the index now takes 2 numbers.  
+The first number is the row, and the second number is the column. 
+If you need everything in a row, you leave the second index blank.  
+If you need everything in a column, you leave the first index blank. 
+
+You can select multiple rows and columns.
+```{r}
+my_mat1[c(1,2),c(2,3)]
+```
+
+# Pipes  
+You can build pipelines in R using the pipe `|>` operator. 
+There are two pipe operators: `|>` or `%>%`.  
+They do the same thing. 
+`|>` is available through base R without loading any packages.  
+`%>%` is only available if you load `library(tidyverse)`. 
+
+How the pipe works is that it takes the output of the first function, 
+and feed it as the input as the next function. 
+
+Say you want to take `sqrt()`,   
+then you take `log10()`, 
+then you take the median.   
+
+```{r}
+my_mat1 |> 
+  sqrt() |>
+  log10() |>
+  median() 
+```
+
+# In class activity 
+## Q1
+Using R, how would you calculate the square root of half of the average of the numbers 5.2, 10, 16.44, 17.3, and 10.6?
+
+## Q2 
+Create an object (variable) that stores the value 3^2 x 4^(1/8). Then overwrite that value with itself divided by 2.95. Print the result. 
+
+## Q3
+Find the formula online for converting degrees Fahrenheit to Celsius. Use a vector to convert the temperatures -40, 77, 20, 101, 120, and 212 in degrees F to C.
+
+1.  Insert a new code chunk
+2.  Make this matrix by binding 4 vectors together: 
+
+    | 1 | 1 | 2 | 2 |
+    | 2 | 2 | 1 | 2 |
+    | 2 | 3 | 3 | 4 |
+    | 1 | 2 | 3 | 4 |
+
+  and save it as an item called `my_mat2`.
+
+3. Select the 1st and 3rd rows and the 1st, 2nd and 4th columns, and save it as an item.
+
+4. Take the square root for each member of my_mat2 and then take log2(). 
+Find the maximum value afterwards. Use the pipe syntax. The command for maximum is `max()`.

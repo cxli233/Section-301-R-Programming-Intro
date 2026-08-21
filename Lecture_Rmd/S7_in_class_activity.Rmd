@@ -1,0 +1,391 @@
+---
+title: "Session 7 in-class activity"
+author: "Chenxin Li"
+date: "2026-06-17"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction 
+In this lesson, we will go over:
+
+* How to join multiple data frames together by matching columns. 
+* How to use the grouping function. 
+* How to perform summary statistics. 
+
+# Packages
+For this lesson, we only need tidyverse. 
+```{r}
+library(tidyverse)
+```
+
+# Joining data by column. 
+Oftentimes you'll need to add different columns from another data frame.
+The jargon for that is joining. 
+
+There are a few commands for joining in R:
+
+1.  `left_join(X, Y)` keeps all the rows in X.
+2.  `right_join(X, Y)` keeps all the rows in Y.
+3.  `inner_join(X, Y)` only keeps rows that are in common.
+4.  `full_join(X, Y)` keeps all rows, filling in `NA` when values are missing from either one.
+
+Usually, `inner_join()` will work well. 
+When you perform downstream analyses you might filter out `NA` anyway. 
+
+Let's continue with where we left off last lesson with file batch import and processing. 
+We will use the files in "../Data/batch_import_example1" folder. 
+```{r}
+file_list1 <- list.files("../Data/S5-batch_import_example1/", pattern = ".cov",
+                         full.names = T)
+file_list1
+length(file_list1)
+```
+These were the same 21 files we've been working with. 
+
+```{r message=F}
+result1 <- lapply(file_list1, FUN = read_delim, 
+      delim = "\t", col_names = F) %>% 
+  bind_rows(.id = "id")
+
+head(result1)
+```
+We have a single data frame with an additional column called id, 
+which tracks the original identity of the rows. 
+
+
+Now let's append the original file name to the big data frame. 
+We just need to do some quick data wrangling. 
+```{r}
+my_og_file_names <- data.frame(
+  file_names = file_list1, 
+  id = as.character(1:length(file_list1))
+)
+
+my_og_file_names
+```
+
+We first created a data frame where one column is the file name, 
+the other column is the id, matching what is in the big data frame.
+I also went ahead and changed the id column from numeric to character 
+because the id column was stored as character in the big data frame.  
+
+Now we just need to join them. Here we can use `full_join()`  
+because there are 21 files and the id ranges from 1:21, each matching a file name.   
+
+```{r}
+result1_with_file_names <- result1 %>% 
+  full_join(my_og_file_names, by = "id")
+
+head(result1_with_file_names)
+```
+
+You can also use string operations to remove extra text in the file name if you want. 
+```{r}
+result1_with_shorter_file_names <- result1_with_file_names %>% 
+  mutate(file_names = str_remove_all(file_names, "../Data/S5-batch_import_example1/50KB.|_ssl.bed.cov"))
+
+head(result1_with_shorter_file_names)
+```
+
+Let's try another example. 
+We will load S6_activity1.csv into R, which is income data from different countries across years. 
+The data were downloaded from the [Gapminder foundation](https://www.gapminder.org/data/).
+```{r}
+income <- read_csv("../Data/S6_activity1.csv") 
+head(income)
+```
+
+You will see that it's not a tidy data frame yet so let's address that.
+```{r}
+income_tidy <- income %>% 
+  pivot_longer(cols = !country, names_to = "year", values_to = "income")
+
+head(income_tidy)
+```
+
+Now let's say we want to know which continent each country is on. 
+To do that we will need another data table. 
+I downloaded the data table from [Our World in Data](https://ourworldindata.org/grapher/continents-according-to-our-world-in-data?tab=table).   
+I saved it as "S7_example1.csv" in the Data folder. 
+```{r}
+country_by_continent <- read_csv("../Data/S7_example1.csv")
+head(country_by_continent)
+```
+
+We will check the first 6 rows first. 
+The information we need is country and continent. 
+The country information is stored as a column called "Entity".  
+The continent information is stored as column called "World region according to OWID".   
+A good practice is to not include space in column names, so let's address that. 
+You can work around column names with space by using the pseudo-quote "``". 
+```{r}
+country_by_continent <- country_by_continent %>% 
+  mutate(continent = `World region according to OWID`) 
+
+country_by_continent
+```
+
+Now we just need to join them. 
+You will notice that in the `income_tidy` table, countries are in the column name "country".  
+But here countries are in the column "Entity".  
+We can workaround that by either making a new column called country using `mutate()`,  
+or use a bit of a weird syntax in joining. 
+Let me show you how. 
+
+```{r}
+income_tidy_continent <- income_tidy %>% 
+  inner_join(country_by_continent, by = c("country" = "Entity"))
+
+head(income_tidy_continent)
+```
+
+Here, `by = c("country" = "Entity")` specified that we want to match the "country" column from table 1 to the "Entity" column from table 2. 
+
+
+# Operations by group. 
+Tidyverse has a `group_by()` function that does not modify the data frame but changes how subsequent operations are done.  
+Let's look at this example. 
+
+```{r}
+# Ignore this chunk - just making some hypothetical data 
+example_transcriptome <- data.frame(
+  gene = c("gene1", "gene2", "gene3"), 
+  timepoint1 = c(1, 100, 100),
+  timepoint2 = c(5, 500, 50),
+  timepoint3 = c(10, 1000, 10)
+)
+
+example_transcriptome
+```
+Let's say you are given a table of gene expression. 
+Each row is a gene, and each column is sample, in this case 3 time points. 
+The values are the normalized expression value in units of transcripts per million (tpm). 
+
+We can make it into a tidy data frame first. 
+```{r}
+example_transcriptome_long <- example_transcriptome %>% 
+  pivot_longer(cols = !gene, names_to = "sample", values_to = "tpm") 
+
+example_transcriptome_long
+```
+
+## Calculate z-score from a tidy data frame. 
+If you look at this example transcriptome, you will see that the 3 genes have very different ranges of value. 
+The ranges are orders of magnitudes different.  
+Gene 1 ranges from 1 to 10.  
+Gene 2 ranges from 100 to 1000.  
+Gene 3 ranges from 10 to 100.   
+You will also see that despite very different orders of magnitude, both gene 1 and 2 increases throughout the experiment,  
+whereas gene 3 decreases. 
+
+You can capture trends across different scales of magnitude using z-score. 
+z score can be understood as how many standard deviations away from the mean for any given value.  
+You can think of it as the differences in absolute magnitude are stabilized by their respective mean.  
+
+The formula for z-score is:
+z = (x - mean(x)) / sd(x). 
+
+To calculate the z-score, we can easily make a new column using `mutate()`.  
+But we need to remember that we want the z-score calculated for each gene separately.  
+This is where `group_by()` comes in handy. 
+
+```{r}
+example_transcriptome_long_z <- example_transcriptome_long %>% 
+  group_by(gene) %>% 
+  mutate(z_score = (tpm - mean(tpm))/sd(tpm)) %>% 
+  ungroup()
+
+example_transcriptome_long_z
+```
+
+You can see that `group_by()` does not modify the data frame.  
+But it modified how `mutate()` functions.  
+We called `group_by(gene)`, which tells R to calculate the z-score for each gene. 
+You can see that for genes 1 and 2, the z-scores increase from ~-1 to 1 through time points. 
+It has the opposite trend For gene 3.  
+
+The `group_by()` function saves you from having to do a for loop,  
+where you will have to do it for each gene in the data frame, calculate means and sd, then calculate z score. 
+With `group_by()`, the entire process is automated.  
+Don't forget to `ungroup()` when you are done.  
+
+# Summary statistics 
+Tidyverse has an easy syntax called `summarise()` to calculate summary statistics such as mean and median from data frames. 
+Summary statistics that can be plugged into `summarise()` includes:
+
+* average: `mean()`
+* median: `median()`
+* stand deviation: `sd()` 
+* sample size: `n()` 
+
+And many others. 
+
+Let's try it out on an hypothetical experiment. 
+```{r}
+# You can ignore this chunk. 
+trt <- rnorm(n = 10, mean = 10, sd = 1)
+ctrl <- rnorm(n = 10, mean = 6, sd = 1)
+location <- c(rep("A", 5), rep("B", 5))
+
+example_experiment <- data.frame(
+  ctrl,
+  trt,
+  location
+) %>% 
+  pivot_longer(names_to = "treatment", values_to = "response", cols = 1:2)
+
+example_experiment
+```
+
+In this experiment, we have two treatments, control (ctrl) and treated (trt).  
+The experiment was repeated at two locations, A or B.  
+At each location, 10 samples were collected. 
+The dependent variable is recorded in the "response" column. 
+
+Let's say I want to find the mean, median, sd, and n for the whole experiment, 
+we will do: 
+```{r}
+example_experiment_s <- example_experiment %>% 
+  summarise(
+    mean = mean(response), 
+    median = median(response),
+    sd = sd(response),
+    n = n()
+  ) 
+
+example_experiment_s
+```
+
+The resulting data frame has 1 row and 4 columns, with each column being a summary statistic. 
+
+## Summary statistics by group. 
+What is more informative will be to calculate summary statistics by group (ctrl vs. trt)  
+so that we can begin to understand if the treatment had an effect on the dependent variable. 
+To do that, we simply need to perform `group_by(treatment)` before running `summarise()`.
+```{r}
+example_experiment_s_by_group <- example_experiment %>% 
+  group_by(treatment) %>% 
+  summarise(
+    mean = mean(response), 
+    median = median(response),
+    sd = sd(response),
+    n = n()
+  ) %>% 
+  ungroup()
+
+example_experiment_s_by_group
+```
+
+1.  `group_by()` selects which columns you want to summarize from.
+    In this case you just want each group to be a group.
+2.  `summarise()` allows you to call the statistical functions, such as mean, sd, and n.
+3.  It's a good practice to `ungroup()` after you are done.
+    Most of the time it doesn't matter, but it will create problems if you don't and you try to switch/modify grouping later.
+
+Now you just get 2 rows and 4 columns with each row as a group. 
+
+Let's say I want summary statistics for each group and for each location. Can I do that?
+Yes, you just need to include location in `group_by()`. 
+```{r}
+example_experiment_s_by_group_location <- example_experiment %>% 
+  group_by(treatment, location) %>% 
+  summarise(
+    mean = mean(response), 
+    median = median(response),
+    sd = sd(response),
+    n = n()
+  ) %>% 
+  ungroup()
+
+example_experiment_s_by_group_location
+```
+
+1.  This time you need to select treatment and location in `group_by()`
+    because you want the mean for each treatment and each location.
+2.  In `summarise()` you call the mean, median, sd, and n functions.
+3.  It's a good practice to `ungroup()` after you are done.
+
+Now each location by treatment combination is a row. 
+Because we have 2 treatments and 2 locations, we should have 2*2 = 4 rows total.  
+In this experiment, we can see that ctrl vs. trt seemed quite different for both locations. 
+
+I hope you can see that `group_by()` followed by `summarise()` is very convenient and powerful. 
+It saves you from having to use for loops to calculate statistics for each group. 
+Instead, `group_by()` automates that. 
+
+## Summary statistics by min and max. 
+Let's go back to our hypothetical transcriptome.
+```{r}
+example_transcriptome_long
+```
+
+Say we want to find the sample where each gene is most highly or most lowly expressed in. 
+To do that, we will need the `slice()` family functions. 
+
+```{r}
+example_transcriptome_highest_exp <- example_transcriptome_long %>% 
+  group_by(gene) %>% 
+  slice_max(order_by = tpm, n = 1) %>% 
+  ungroup()
+
+example_transcriptome_highest_exp
+```
+It functions as both summary and filtering. 
+
+* First, it finds the min or max, depending on if you called `slice_min()` or `slice_max()`. 
+* Then, it filters the row that has the min or max value. 
+
+The resulting table has each gene as a row, and only contains the row with the highest expression. 
+Since we called `n = 1` in `slice_max()`, it only returns the top expressing time point. 
+If we used `slice_min()` here, we will find the lowest expressing time point instead. 
+
+Let's try another example. 
+Say we want to find top 3 highest income country per continent in the year 2010, using `income_tidy_continent`. 
+```{r}
+income_top3_by_continent_2010 <- income_tidy_continent %>% 
+  filter(year == 2010) %>% 
+  group_by(continent) %>% 
+  slice_max(order_by = income, n = 3) %>% 
+  ungroup()
+
+income_top3_by_continent_2010
+```
+
+1. We first filter for `year == 2010`. 
+2. Then we group by continent. 
+3. Then we call `slice_max()` with `n = 3` to extract the top 3. 
+4. Lastly, we `ungroup()` when we are done. 
+
+# In class activity 
+## Q1 
+1. Load "S7_activity1.csv" and "S7_activity2.csv" from the Data folder. 
+These are two datasets downloaded from the [Gapminder foundation](https://www.gapminder.org/data/). 
+
+* "S7_activity1.csv" contains child mortality (0 - 5 year old) per 1000 born.
+* "S7_activity2.csv" contains average births per family.    
+
+These were recorded/estimated from year 1800 and projected all the way to 2100.  
+Join these two data frames together after tidying them. 
+Also join the income data frame (in tidy form) to make a larger table that contains mortality, births, income, and continent columns. 
+Hint: you will need to use `by = c("country", "year")` inside `inner_join()` to specify that you need to match both the country and year columns. 
+
+## Q2
+Filter the data for just Asia. Find the top 10 countries based on income between year 1945 and 2015.   
+Hint: use `group_by()` to automate calculations across years. 
+
+## Q3 
+Filter the data for year 2010. 
+Classify countries based on the birth rate. 
+If the birth rate is > 2, classify as "Class 1". 
+Otherwise, classify as "Class 2". 
+How do average income and mortality compare between these 2 classifications? 
+Hint: you will need to call `mean()` twice in `summarise()`, once for income and once for mortality. 
+
+
+
+
+
