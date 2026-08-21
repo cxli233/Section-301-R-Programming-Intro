@@ -26,4 +26,5 @@ R programming foundations for bioinformatics, data science, and data visualizati
 ### Additional notes 
 
 Please go to [this Zenodo record](https://zenodo.org/records/22047472)
-to download the example data required for "S10_in_class_activity.Rmd".    
+to download the example data required for "S10_in_class_activity.Rmd"
+and move them into the "Data" folder. 
