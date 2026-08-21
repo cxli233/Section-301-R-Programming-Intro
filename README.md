@@ -5,10 +5,10 @@ R programming foundations for bioinformatics, data science, and data visualizati
 
 1. Introduction, R/R-Studio
 2. R programming foundations 
-3. Data structures, Boolean operations, strings
-4. File input/output, control structures
-5. Tabular data with Tidyverse 1 
-6. Fall Break
+3. Holiday
+4. Data structures, Boolean operations, strings
+5. File input/output, control structures
+6. Tabular data with Tidyverse 1 
 7. Tabular data with Tidyverse 2
 8. Graphics with ggplot2: grammar of graphics
 9. Graphics with ggplot2: means separation
